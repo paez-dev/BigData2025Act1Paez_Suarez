@@ -34,7 +34,7 @@ jobs:
         run: python src/ingestion.py
 
       - name: Subir archivos generados como artefactos
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: evidencias-ingestion
           path: |
