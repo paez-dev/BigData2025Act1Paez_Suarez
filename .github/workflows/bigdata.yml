@@ -41,3 +41,16 @@ jobs:
             src/static/db/ingestion.db
             src/static/xlsx/ingestion.xlsx
             src/static/auditoria/ingestion.txt
+
+      - name: Configurar Git para commit automático
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Commit y Push de los cambios
+        run: |
+          git add src/static/db/ingestion.db src/static/xlsx/ingestion.xlsx src/static/auditoria/ingestion.txt
+          git commit -m "Actualización automática de evidencias de ingesta" || echo "No hay cambios para commitear"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
