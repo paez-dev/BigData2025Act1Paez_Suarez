@@ -23,8 +23,6 @@ wheels/
 # Kaggle
 kaggle.json
 
-# SQLite
-*.db
 
 # VS Code
 .vscode/
