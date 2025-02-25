@@ -1,42 +1,24 @@
 import sqlite3
 import pandas as pd
-from kaggle.api.kaggle_api_extended import KaggleApi
-from datetime import datetime
 import os
+from datetime import datetime
+import kagglehub
+from kagglehub import KaggleDatasetAdapter
 
 def fetch_data_from_kaggle():
     """
-    Función para obtener datos desde Kaggle API
+    Función para obtener datos desde Kaggle API usando kagglehub.load_dataset().
     """
     print("Conectando al API de Kaggle...")
     try:
-        # Inicializar y autenticar la API de Kaggle
-        api = KaggleApi()
-        api.authenticate()
-
-        # Crear directorio temporal para descargar el dataset
-        temp_dir = 'temp'
-        os.makedirs(temp_dir, exist_ok=True)
-
-        # Descargar el archivo CSV y descomprimirlo
-        api.dataset_download_file(
-            dataset='olistbr/brazilian-ecommerce',
-            file_name='olist_customers_dataset.csv',
-            path=temp_dir,
-            unzip=True
+        # Especificamos el archivo que queremos extraer del dataset
+        file_path = "olist_customers_dataset.csv"
+        df = kagglehub.load_dataset(
+            KaggleDatasetAdapter.PANDAS,
+            "olistbr/brazilian-ecommerce",
+            file_path
         )
-
-        # Construir la ruta completa al archivo descomprimido
-        file_path = os.path.join(temp_dir, 'olist_customers_dataset.csv')
-
-        # Leer el archivo CSV descargado
-        df = pd.read_csv(file_path)
         print("Datos descargados exitosamente.")
-
-        # Limpiar archivos temporales (opcional, se debe borrar la carpeta temp)
-        os.remove(file_path)
-        os.rmdir(temp_dir)
-
         return df
     except Exception as e:
         print(f"Error al descargar datos de Kaggle: {str(e)}")
@@ -44,7 +26,7 @@ def fetch_data_from_kaggle():
 
 def create_database(df):
     """
-    Función para crear y poblar la base de datos SQLite
+    Función para crear y poblar la base de datos SQLite.
     """
     print("Creando base de datos SQLite...")
     try:
@@ -59,9 +41,9 @@ def create_database(df):
 
 def generate_sample_file(df):
     """
-    Función para generar archivo Excel con muestra de datos
+    Función para generar archivo Excel con muestra de datos.
     """
-    print("Generando archivo Excel...")
+    print("Generando archivo Excel de muestra...")
     try:
         os.makedirs('src/static/xlsx', exist_ok=True)
         sample = df.head(100)
@@ -73,7 +55,7 @@ def generate_sample_file(df):
 
 def generate_audit_file(df):
     """
-    Función para generar archivo de auditoría
+    Función para generar archivo de auditoría que compare los datos del API y la base de datos.
     """
     print("Generando archivo de auditoría...")
     try:
@@ -106,7 +88,7 @@ Resumen estadístico:
 
 def main():
     """
-    Función principal que ejecuta todo el proceso
+    Función principal que ejecuta todo el proceso de ingesta.
     """
     try:
         data = fetch_data_from_kaggle()
