@@ -1,103 +1,154 @@
+import os
+import zipfile
 import sqlite3
 import pandas as pd
-import os
-from datetime import datetime
 import kagglehub
-from kagglehub import KaggleDatasetAdapter
+from datetime import datetime
 
-def fetch_data_from_kaggle():
+def download_dataset_zip():
     """
-    Función para obtener datos desde Kaggle API usando kagglehub.load_dataset().
+    Descarga el dataset desde Kaggle.
+    Este método utiliza kagglehub.dataset_download, que descarga el dataset y devuelve la ruta donde se encuentra.
     """
-    print("Conectando al API de Kaggle...")
-    try:
-        # Especificamos el archivo que queremos extraer del dataset
-        file_path = "olist_customers_dataset.csv"
-        df = kagglehub.load_dataset(
-            KaggleDatasetAdapter.PANDAS,
-            "olistbr/brazilian-ecommerce",
-            file_path
-        )
-        print("Datos descargados exitosamente.")
-        return df
-    except Exception as e:
-        print(f"Error al descargar datos de Kaggle: {str(e)}")
-        raise
+    print("Descargando dataset desde Kaggle...")
+    # Descarga el dataset; esto crea un directorio con los archivos descargados (puede incluir el .zip)
+    dataset_path = kagglehub.dataset_download("olistbr/brazilian-ecommerce")
+    print("Ruta al dataset:", dataset_path)
+    return dataset_path
 
-def create_database(df):
+def extract_zip_files(dataset_path):
     """
-    Función para crear y poblar la base de datos SQLite.
+    Busca el archivo .zip en la ruta descargada y lo extrae en una carpeta 'extracted' dentro de esa ruta.
     """
-    print("Creando base de datos SQLite...")
-    try:
-        os.makedirs('src/static/db', exist_ok=True)
-        conn = sqlite3.connect('src/static/db/ingestion.db')
-        df.to_sql('customers', conn, if_exists='replace', index=False)
-        print("Base de datos creada y datos insertados.")
-        conn.close()
-    except Exception as e:
-        print(f"Error al crear la base de datos: {str(e)}")
-        raise
+    # Suponemos que el .zip se llama 'brazilian-ecommerce.zip' o similar.
+    # Para mayor robustez, se puede buscar cualquier .zip en el dataset_path.
+    zip_files = [f for f in os.listdir(dataset_path) if f.endswith('.zip')]
+    if not zip_files:
+        raise FileNotFoundError("No se encontró ningún archivo .zip en la ruta del dataset")
 
-def generate_sample_file(df):
+    zip_file = os.path.join(dataset_path, zip_files[0])
+
+    extract_dir = os.path.join(dataset_path, "extracted")
+    os.makedirs(extract_dir, exist_ok=True)
+    print(f"Extrayendo {zip_file} en {extract_dir}...")
+    with zipfile.ZipFile(zip_file, "r") as z:
+        z.extractall(extract_dir)
+    return extract_dir
+
+def create_database_from_csvs(csv_dir):
     """
-    Función para generar archivo Excel con muestra de datos.
+    Recorre el directorio donde están los CSV y, para cada uno, crea una tabla en la base de datos SQLite.
+    El nombre de la tabla se toma del nombre del archivo (sin extensión).
     """
-    print("Generando archivo Excel de muestra...")
-    try:
-        os.makedirs('src/static/xlsx', exist_ok=True)
-        sample = df.head(100)
-        sample.to_excel('src/static/xlsx/ingestion.xlsx', index=False)
-        print("Archivo Excel generado.")
-    except Exception as e:
-        print(f"Error al generar archivo Excel: {str(e)}")
-        raise
+    os.makedirs('src/static/db', exist_ok=True)
+    db_path = 'src/static/db/ingestion.db'
+    conn = sqlite3.connect(db_path)
+    csv_files = [f for f in os.listdir(csv_dir) if f.endswith('.csv')]
+    if not csv_files:
+        raise FileNotFoundError("No se encontraron archivos CSV en el directorio extraído")
 
-def generate_audit_file(df):
+    for file in csv_files:
+        file_path = os.path.join(csv_dir, file)
+        print(f"Leyendo {file_path}...")
+        try:
+            df = pd.read_csv(file_path, encoding="latin1")
+        except Exception as e:
+            print(f"Error al leer {file}: {e}")
+            continue
+        table_name = os.path.splitext(file)[0]
+        print(f"Creando/actualizando tabla '{table_name}' en la base de datos...")
+        df.to_sql(table_name, conn, if_exists="replace", index=False)
+    conn.close()
+    print("Base de datos creada correctamente en:", db_path)
+
+def generate_sample_file(csv_dir):
     """
-    Función para generar archivo de auditoría que compare los datos del API y la base de datos.
+    Para la evidencia complementaria, genera un archivo Excel que combine una muestra representativa de cada CSV.
+    Se crea un DataFrame concatenando las primeras 10 filas de cada archivo y luego se exporta a Excel.
     """
-    print("Generando archivo de auditoría...")
-    try:
-        os.makedirs('src/static/auditoria', exist_ok=True)
-        conn = sqlite3.connect('src/static/db/ingestion.db')
-        db_data = pd.read_sql_query("SELECT * FROM customers", conn)
-        conn.close()
+    os.makedirs('src/static/xlsx', exist_ok=True)
+    samples = []
+    csv_files = [f for f in os.listdir(csv_dir) if f.endswith('.csv')]
+    for file in csv_files:
+        file_path = os.path.join(csv_dir, file)
+        try:
+            df = pd.read_csv(file_path, encoding="latin1")
+            sample = df.head(10)
+            sample['origen'] = file  # Añadimos columna para identificar el origen de la muestra
+            samples.append(sample)
+        except Exception as e:
+            print(f"Error al leer {file} para la muestra: {e}")
+            continue
+    if samples:
+        final_sample = pd.concat(samples)
+        excel_path = 'src/static/xlsx/ingestion.xlsx'
+        final_sample.to_excel(excel_path, index=False)
+        print("Archivo Excel de muestra generado en:", excel_path)
+    else:
+        print("No se generó archivo de muestra porque no se pudo leer ningún CSV.")
 
-        api_count = len(df)
-        db_count = len(db_data)
+def generate_audit_file(dataset_path, csv_dir):
+    """
+    Genera un archivo de auditoría que compara el número total de registros extraídos de todos los CSV
+    con la suma de registros insertados en las tablas de la base de datos.
+    """
+    audit_lines = []
+    total_csv_records = 0
+    csv_files = [f for f in os.listdir(csv_dir) if f.endswith('.csv')]
+    for file in csv_files:
+        file_path = os.path.join(csv_dir, file)
+        try:
+            df = pd.read_csv(file_path, encoding="latin1")
+            count = len(df)
+            total_csv_records += count
+            audit_lines.append(f"{file}: {count} registros")
+        except Exception as e:
+            audit_lines.append(f"{file}: error al leer ({e})")
 
-        audit_text = f"""Reporte de Auditoría - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-=======================================
-Registros extraídos del API: {api_count}
-Registros almacenados en la base de datos: {db_count}
-Integridad de los datos: {'Correcta' if api_count == db_count else 'Incorrecta'}
+    # Leer la base de datos y sumar registros de todas las tablas
+    db_path = 'src/static/db/ingestion.db'
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    tables = cursor.fetchall()
+    total_db_records = 0
+    for table in tables:
+        tname = table[0]
+        df_db = pd.read_sql_query(f"SELECT * FROM {tname}", conn)
+        count_db = len(df_db)
+        total_db_records += count_db
+        audit_lines.append(f"Tabla '{tname}': {count_db} registros")
+    conn.close()
 
-Columnas en el dataset:
-{', '.join(df.columns.tolist())}
+    audit_text = f"""Reporte de Auditoría - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+==============================
+Total de registros en archivos CSV: {total_csv_records}
+Total de registros en la base de datos: {total_db_records}
 
-Resumen estadístico:
-{df.describe().to_string()}
+Detalle por archivo/tabla:
+{chr(10).join(audit_lines)}
 """
-        with open('src/static/auditoria/ingestion.txt', 'w', encoding='utf-8') as f:
-            f.write(audit_text)
-        print("Archivo de auditoría generado.")
-    except Exception as e:
-        print(f"Error al generar archivo de auditoría: {str(e)}")
-        raise
+    os.makedirs('src/static/auditoria', exist_ok=True)
+    audit_path = 'src/static/auditoria/ingestion.txt'
+    with open(audit_path, 'w', encoding='utf-8') as f:
+        f.write(audit_text)
+    print("Archivo de auditoría generado en:", audit_path)
 
 def main():
-    """
-    Función principal que ejecuta todo el proceso de ingesta.
-    """
     try:
-        data = fetch_data_from_kaggle()
-        create_database(data)
-        generate_sample_file(data)
-        generate_audit_file(data)
+        # Descarga y extracción
+        dataset_path = download_dataset_zip()
+        csv_dir = extract_zip_files(dataset_path)
+
+        # Procesamiento
+        create_database_from_csvs(csv_dir)
+        generate_sample_file(csv_dir)
+        generate_audit_file(dataset_path, csv_dir)
+
         print("Proceso completado exitosamente.")
+
     except Exception as e:
-        print(f"Error en el proceso principal: {str(e)}")
+        print("Error en el proceso:", e)
         raise
 
 if __name__ == "__main__":

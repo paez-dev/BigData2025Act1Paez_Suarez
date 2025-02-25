@@ -5,14 +5,12 @@ setup(
     version="1.0.0",
     packages=find_packages(),
     install_requires=[
-        'pandas>=2.0.0',
-        'kagglehub[pandas-datasets]>=0.1.0',
-        'openpyxl>=3.1.2',
-        'requests>=2.31.0',
+        "pandas>=2.0.0",
+        "kagglehub[pandas-datasets]>=0.3.8",
+        "openpyxl>=3.1.2"
     ],
     author="Tu Nombre",
     author_email="tu.email@ejemplo.com",
-    description="Proyecto de ingestión de datos desde Kaggle API",
-    keywords="bigdata, ingestion, kaggle",
-    python_requires='>=3.9',
+    description="Etapa de ingesta de datos para el proyecto integrador de Big Data",
+    python_requires=">=3.9",
 )
