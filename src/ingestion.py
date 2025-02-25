@@ -10,27 +10,32 @@ def fetch_data_from_kaggle():
     """
     print("Conectando al API de Kaggle...")
     try:
-        # Inicializar la API de Kaggle
+        # Inicializar y autenticar la API de Kaggle
         api = KaggleApi()
         api.authenticate()
 
         # Crear directorio temporal para descargar el dataset
-        os.makedirs('temp', exist_ok=True)
+        temp_dir = 'temp'
+        os.makedirs(temp_dir, exist_ok=True)
 
-        # Descargar el dataset
+        # Descargar el archivo CSV y descomprimirlo
         api.dataset_download_file(
             dataset='olistbr/brazilian-ecommerce',
             file_name='olist_customers_dataset.csv',
-            path='temp'
+            path=temp_dir,
+            unzip=True
         )
 
+        # Construir la ruta completa al archivo descomprimido
+        file_path = os.path.join(temp_dir, 'olist_customers_dataset.csv')
+
         # Leer el archivo CSV descargado
-        df = pd.read_csv('temp/olist_customers_dataset.csv')
+        df = pd.read_csv(file_path)
         print("Datos descargados exitosamente.")
 
-        # Limpiar archivos temporales
-        os.remove('temp/olist_customers_dataset.csv')
-        os.rmdir('temp')
+        # Limpiar archivos temporales (opcional, se debe borrar la carpeta temp)
+        os.remove(file_path)
+        os.rmdir(temp_dir)
 
         return df
     except Exception as e:
@@ -73,7 +78,6 @@ def generate_audit_file(df):
     print("Generando archivo de auditoría...")
     try:
         os.makedirs('src/static/auditoria', exist_ok=True)
-
         conn = sqlite3.connect('src/static/db/ingestion.db')
         db_data = pd.read_sql_query("SELECT * FROM customers", conn)
         conn.close()
@@ -93,7 +97,6 @@ Columnas en el dataset:
 Resumen estadístico:
 {df.describe().to_string()}
 """
-
         with open('src/static/auditoria/ingestion.txt', 'w', encoding='utf-8') as f:
             f.write(audit_text)
         print("Archivo de auditoría generado.")
