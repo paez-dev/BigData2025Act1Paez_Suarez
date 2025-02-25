@@ -6,7 +6,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'pandas>=2.0.0',
-        'kaggle>=1.5.13',  # Cambiamos kagglehub por kaggle
+        'kagglehub[pandas-datasets]>=0.1.0',
         'openpyxl>=3.1.2',
         'requests>=2.31.0',
     ],
