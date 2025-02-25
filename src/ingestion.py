@@ -1,6 +1,6 @@
 import sqlite3
 import pandas as pd
-import kagglehub
+from kaggle.api.kaggle_api_extended import KaggleApi
 from datetime import datetime
 import os
 
@@ -10,12 +10,28 @@ def fetch_data_from_kaggle():
     """
     print("Conectando al API de Kaggle...")
     try:
-        # Cargar el dataset de Brazilian E-commerce
-        df = kagglehub.load_dataset(
-            'olistbr/brazilian-ecommerce',
-            'olist_customers_dataset.csv'  # Especificamos el archivo específico
+        # Inicializar la API de Kaggle
+        api = KaggleApi()
+        api.authenticate()
+
+        # Crear directorio temporal para descargar el dataset
+        os.makedirs('temp', exist_ok=True)
+
+        # Descargar el dataset
+        api.dataset_download_file(
+            dataset='olistbr/brazilian-ecommerce',
+            file_name='olist_customers_dataset.csv',
+            path='temp'
         )
+
+        # Leer el archivo CSV descargado
+        df = pd.read_csv('temp/olist_customers_dataset.csv')
         print("Datos descargados exitosamente.")
+
+        # Limpiar archivos temporales
+        os.remove('temp/olist_customers_dataset.csv')
+        os.rmdir('temp')
+
         return df
     except Exception as e:
         print(f"Error al descargar datos de Kaggle: {str(e)}")
@@ -27,9 +43,7 @@ def create_database(df):
     """
     print("Creando base de datos SQLite...")
     try:
-        # Asegurarse de que el directorio existe
         os.makedirs('src/static/db', exist_ok=True)
-
         conn = sqlite3.connect('src/static/db/ingestion.db')
         df.to_sql('customers', conn, if_exists='replace', index=False)
         print("Base de datos creada y datos insertados.")
@@ -44,10 +58,8 @@ def generate_sample_file(df):
     """
     print("Generando archivo Excel...")
     try:
-        # Asegurarse de que el directorio existe
         os.makedirs('src/static/xlsx', exist_ok=True)
-
-        sample = df.head(100)  # Tomamos los primeros 100 registros como muestra
+        sample = df.head(100)
         sample.to_excel('src/static/xlsx/ingestion.xlsx', index=False)
         print("Archivo Excel generado.")
     except Exception as e:
@@ -60,14 +72,12 @@ def generate_audit_file(df):
     """
     print("Generando archivo de auditoría...")
     try:
-        # Asegurarse de que el directorio existe
         os.makedirs('src/static/auditoria', exist_ok=True)
 
         conn = sqlite3.connect('src/static/db/ingestion.db')
         db_data = pd.read_sql_query("SELECT * FROM customers", conn)
         conn.close()
 
-        # Comparación de datos
         api_count = len(df)
         db_count = len(db_data)
 
@@ -96,12 +106,10 @@ def main():
     Función principal que ejecuta todo el proceso
     """
     try:
-        # Ejecutar el proceso completo
         data = fetch_data_from_kaggle()
         create_database(data)
         generate_sample_file(data)
         generate_audit_file(data)
-
         print("Proceso completado exitosamente.")
     except Exception as e:
         print(f"Error en el proceso principal: {str(e)}")
