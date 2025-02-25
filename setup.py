@@ -7,10 +7,11 @@ setup(
     install_requires=[
         'pandas>=2.0.0',
         'kagglehub>=0.1.0',
+        'openpyxl>=3.1.2',  # Para soporte de Excel
         'requests>=2.31.0',
     ],
-    author="Jean Carlos Páez Ramírez y Juliana peña Suarez",
-    author_email="",
+    author="Tu Nombre",
+    author_email="tu.email@ejemplo.com",
     description="Proyecto de ingestión de datos desde Kaggle API",
     keywords="bigdata, ingestion, kaggle",
     python_requires='>=3.9',
