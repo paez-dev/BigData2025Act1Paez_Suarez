@@ -11,29 +11,33 @@ def download_dataset_zip():
     Este método utiliza kagglehub.dataset_download, que descarga el dataset y devuelve la ruta donde se encuentra.
     """
     print("Descargando dataset desde Kaggle...")
-    # Descarga el dataset; esto crea un directorio con los archivos descargados (puede incluir el .zip)
+    # Descarga el dataset; esto crea un directorio con los archivos descargados (puede incluir el .zip o los CSV)
     dataset_path = kagglehub.dataset_download("olistbr/brazilian-ecommerce")
     print("Ruta al dataset:", dataset_path)
     return dataset_path
 
 def extract_zip_files(dataset_path):
     """
-    Busca el archivo .zip en la ruta descargada y lo extrae en una carpeta 'extracted' dentro de esa ruta.
+    Busca un archivo .zip en la ruta del dataset y, si lo encuentra, lo extrae en una carpeta 'extracted'
+    dentro de esa ruta. Si no hay archivos .zip, verifica si ya existen archivos CSV, asumiendo que el dataset ya está extraído.
     """
-    # Suponemos que el .zip se llama 'brazilian-ecommerce.zip' o similar.
-    # Para mayor robustez, se puede buscar cualquier .zip en el dataset_path.
     zip_files = [f for f in os.listdir(dataset_path) if f.endswith('.zip')]
-    if not zip_files:
-        raise FileNotFoundError("No se encontró ningún archivo .zip en la ruta del dataset")
-
-    zip_file = os.path.join(dataset_path, zip_files[0])
-
-    extract_dir = os.path.join(dataset_path, "extracted")
-    os.makedirs(extract_dir, exist_ok=True)
-    print(f"Extrayendo {zip_file} en {extract_dir}...")
-    with zipfile.ZipFile(zip_file, "r") as z:
-        z.extractall(extract_dir)
-    return extract_dir
+    if zip_files:
+        zip_file = os.path.join(dataset_path, zip_files[0])
+        extract_dir = os.path.join(dataset_path, "extracted")
+        os.makedirs(extract_dir, exist_ok=True)
+        print(f"Extrayendo {zip_file} en {extract_dir}...")
+        with zipfile.ZipFile(zip_file, "r") as z:
+            z.extractall(extract_dir)
+        return extract_dir
+    else:
+        # Si no se encuentra un ZIP, se verifica si existen archivos CSV en la ruta
+        csv_files = [f for f in os.listdir(dataset_path) if f.endswith('.csv')]
+        if csv_files:
+            print("No se encontró archivo ZIP pero se detectaron archivos CSV; se asume que el dataset ya se encuentra extraído.")
+            return dataset_path
+        else:
+            raise FileNotFoundError("No se encontró ningún archivo .zip ni archivos .csv en la ruta del dataset")
 
 def create_database_from_csvs(csv_dir):
     """
@@ -140,7 +144,7 @@ def main():
         dataset_path = download_dataset_zip()
         csv_dir = extract_zip_files(dataset_path)
 
-        # Procesamiento
+        # Procesamiento: creación de base de datos, generación de muestra y auditoría
         create_database_from_csvs(csv_dir)
         generate_sample_file(csv_dir)
         generate_audit_file(dataset_path, csv_dir)
