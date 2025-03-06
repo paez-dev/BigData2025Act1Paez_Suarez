@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+          fetch-depth: 0
 
       # Paso 2: Configurar Python 3.9
       - name: Configurar Python 3.9
@@ -23,68 +24,80 @@ jobs:
         with:
           python-version: 3.9
 
-      # Paso 3: Configurar credenciales de Kaggle
-      - name: Configurar credenciales de Kaggle
+      # Paso 3: Crear directorios necesarios
+      - name: Crear directorios necesarios
         run: |
           mkdir -p ~/.kaggle
+          mkdir -p src/static/auditoria
+          mkdir -p src/static/csv
+          mkdir -p src/static/db
+
+      # Paso 4: Configurar credenciales de Kaggle
+      - name: Configurar credenciales de Kaggle
+        run: |
           printf '{"username": "%s", "key": "%s"}' "${{ secrets.KAGGLE_USERNAME }}" "${{ secrets.KAGGLE_KEY }}" > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
 
-      # Paso 4: Instalar dependencias
+      # Paso 5: Instalar dependencias
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
           pip install -e .
           pip install matplotlib seaborn
 
-      # Paso 5: Ejecutar script de ingesta
-      - name: Ejecutar script de ingesta
-        run: python src/ingestion.py
-
-      # Paso 6: Subir artefactos de ingesta
-      - name: Subir artefactos de ingesta
-        uses: actions/upload-artifact@v4
-        with:
-          name: evidencias-ingestion
-          path: |
-            src/static/db/ingestion.db
-            src/static/csv/ingestion.csv
-            src/static/auditoria/ingestion.txt
-
-      # Paso 7: Ejecutar script de limpieza
-      - name: Ejecutar script de limpieza
-        run: python src/cleaning.py
-
-      # Paso 8: Subir artefactos de limpieza
-      - name: Subir artefactos de limpieza
-        uses: actions/upload-artifact@v4
-        with:
-          name: evidencias-limpieza
-          path: |
-            src/static/db/cleaned_data.db
-            src/static/csv/cleaned_data.csv
-            src/static/auditoria/cleaning_report.txt
-      
-      # Paso 9: Configurar Git para reconciliar ramas
-      - name: Configurar Git para reconciliar ramas
-        run: git config pull.rebase false
-
-      # Paso 10: Configurar Git para sincronizar con el repositorio remoto
-      - name: Sincronizar con el repositorio remoto
-        run: git pull origin main
-
-      # Paso 11: Configurar Git para commit automático
-      - name: Configurar Git para commit automático
+      # Paso 6: Configurar Git
+      - name: Configurar Git
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
+          git config pull.rebase false
 
-      # Paso 12: Commit y Push de los cambios
+      # Paso 7: Ejecutar scripts
+      - name: Ejecutar scripts de procesamiento
+        run: |
+          python src/ingestion.py
+          python src/cleaning.py
+
+      # Paso 8: Verificar archivos generados
+      - name: Verificar archivos generados
+        run: |
+          ls -la src/static/auditoria/
+          ls -la src/static/csv/
+          ls -la src/static/db/
+
+      # Paso 9: Subir artefactos
+      - name: Subir artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidencias-procesamiento
+          path: |
+            src/static/db/*.db
+            src/static/csv/*.csv
+            src/static/auditoria/*.txt
+
+      # Paso 10: Commit y Push de los cambios
       - name: Commit y Push de los cambios
         run: |
-          git add src/static/csv/ingestion.csv src/static/auditoria/ingestion.txt
-          git add src/static/csv/cleaned_data.csv src/static/auditoria/cleaning_report.txt
+          # Sincronizar con el repositorio remoto
+          git pull origin main --no-rebase
+
+          # Verificar y agregar archivos si existen
+          for file in \
+            "src/static/csv/ingestion.csv" \
+            "src/static/auditoria/ingestion.txt" \
+            "src/static/csv/cleaned_data.csv" \
+            "src/static/auditoria/cleaning_report.txt"
+          do
+            if [ -f "$file" ]; then
+              git add "$file"
+              echo "Agregado: $file"
+            else
+              echo "No encontrado: $file"
+            fi
+          done
+
+          # Intentar commit y push
           git commit -m "Actualización automática de evidencias de ingesta y limpieza" || echo "No hay cambios para commitear"
-          git push
+          git push origin main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
