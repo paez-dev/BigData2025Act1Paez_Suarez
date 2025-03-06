@@ -148,8 +148,7 @@ def clean_data(analysis_results):
 def clean_previous_files():
     files_to_remove = [
         'src/static/csv/cleaned_data.csv',
-        'src/static/auditoria/cleaning_report.txt',
-        'src/static/auditoria/ingestion.txt'
+        'src/static/auditoria/cleaning_report.txt'
     ]
     for file in files_to_remove:
         if os.path.exists(file):
