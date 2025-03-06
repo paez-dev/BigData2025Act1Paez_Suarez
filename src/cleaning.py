@@ -145,6 +145,17 @@ def clean_data(analysis_results):
 
     return cleaned_results, cleaning_operations
 
+def clean_previous_files():
+    files_to_remove = [
+        'src/static/csv/cleaned_data.csv',
+        'src/static/auditoria/cleaning_report.txt',
+        'src/static/auditoria/ingestion.txt'
+    ]
+    for file in files_to_remove:
+        if os.path.exists(file):
+            print(f"Eliminando archivo existente: {file}")
+            os.remove(file)
+
 def export_cleaned_data(cleaned_results):
     """
     Exporta los datos limpios a un archivo Excel o CSV.
@@ -266,6 +277,9 @@ def main():
 
         # Limpieza de datos
         cleaned_results, cleaning_operations = clean_data(analysis_results)
+
+        # Eliminar archivos existentes antes de exportarlo
+        clean_previous_files()
 
         # Exportar datos limpios a Excel
         export_cleaned_data(cleaned_results)
