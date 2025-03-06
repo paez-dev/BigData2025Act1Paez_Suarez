@@ -152,6 +152,12 @@ def export_cleaned_data(cleaned_results):
     print("Exportando datos limpios...")
     os.makedirs('src/static/csv', exist_ok=True)
 
+    # Eliminar el archivo si ya existe
+    csv_path = 'src/static/csv/cleaned_data.csv'
+    if os.path.exists(csv_path):
+        print(f"Eliminando archivo existente: {csv_path}")
+        os.remove(csv_path)
+
     # Seleccionar una muestra representativa de cada tabla
     samples = []
     for table, df in cleaned_results.items():
