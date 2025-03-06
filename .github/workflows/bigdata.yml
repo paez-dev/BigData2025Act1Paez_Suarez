@@ -78,10 +78,19 @@ jobs:
       # Paso 10: Sincronizar con el repositorio remoto
       - name: Sincronizar con el repositorio remoto
         run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
           git stash
-          git pull origin main --rebase --autostash
+          git pull origin main --no-rebase
+          git stash pop || echo "No hay stash para aplicar"
 
-      # Paso 11: Commit y Push de los cambios
+      # Paso 11: Ejecutar scripts
+      - name: Ejecutar scripts de procesamiento
+        run: |
+          python src/ingestion.py
+          python src/cleaning.py
+
+      # Paso 12: Commit y Push de los cambios
       - name: Commit y Push de los cambios
         run: |
           # Verificar y agregar archivos si existen
@@ -99,8 +108,5 @@ jobs:
             fi
           done
 
-          # Intentar commit y push
-          git commit -m "Actualización automática de evidencias de ingesta y limpieza" || echo "No hay cambios para commitear"
+          git commit -m "Actualización automática de evidencias" || echo "No hay cambios para commitear"
           git push origin main --force
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
