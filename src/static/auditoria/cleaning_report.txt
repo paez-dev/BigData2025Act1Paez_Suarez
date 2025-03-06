@@ -1,4 +1,4 @@
-Reporte de Auditoría de Limpieza - 2025-03-06 22:05:20
+Reporte de Auditoría de Limpieza - 2025-03-06 22:46:42
 ==================================================
 RESUMEN GENERAL:
 - Registros antes de la limpieza: 1550922
