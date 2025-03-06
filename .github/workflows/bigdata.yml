@@ -75,12 +75,15 @@ jobs:
             src/static/csv/*.csv
             src/static/auditoria/*.txt
 
-      # Paso 10: Commit y Push de los cambios
+      # Paso 10: Sincronizar con el repositorio remoto
+      - name: Sincronizar con el repositorio remoto
+        run: |
+          git stash
+          git pull origin main --rebase --autostash
+
+      # Paso 11: Commit y Push de los cambios
       - name: Commit y Push de los cambios
         run: |
-          # Sincronizar con el repositorio remoto
-          git pull origin main --no-rebase
-
           # Verificar y agregar archivos si existen
           for file in \
             "src/static/csv/ingestion.csv" \
@@ -98,6 +101,6 @@ jobs:
 
           # Intentar commit y push
           git commit -m "Actualización automática de evidencias de ingesta y limpieza" || echo "No hay cambios para commitear"
-          git push origin main
+          git push origin main --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
