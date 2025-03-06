@@ -64,14 +64,18 @@ jobs:
             src/static/db/cleaned_data.db
             src/static/csv/cleaned_data.csv
             src/static/auditoria/cleaning_report.txt
-
+      
       # Paso 9: Configurar Git para commit automático
+      - name: Configurar Git para reconciliar ramas
+        run: git config pull.rebase false
+
+      # Paso 10: Configurar Git para commit automático
       - name: Configurar Git para commit automático
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      # Paso 10: Commit y Push de los cambios
+      # Paso 11: Commit y Push de los cambios
       - name: Commit y Push de los cambios
         run: |
           git add src/static/csv/ingestion.csv src/static/auditoria/ingestion.txt
