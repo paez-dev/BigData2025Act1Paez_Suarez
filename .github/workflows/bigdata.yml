@@ -11,101 +11,53 @@ jobs:
   data_processing:
     runs-on: ubuntu-latest
     steps:
-      # Paso 1: Checkout del repositorio
       - name: Checkout del repositorio
         uses: actions/checkout@v4
         with:
-          lfs: true
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Paso 2: Configurar Python 3.9
       - name: Configurar Python 3.9
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
-      # Paso 3: Crear directorios necesarios
-      - name: Crear directorios necesarios
-        run: |
-          mkdir -p ~/.kaggle
-          mkdir -p src/static/auditoria
-          mkdir -p src/static/csv
-          mkdir -p src/static/db
-
-      # Paso 4: Configurar credenciales de Kaggle
       - name: Configurar credenciales de Kaggle
         run: |
+          mkdir -p ~/.kaggle
           printf '{"username": "%s", "key": "%s"}' "${{ secrets.KAGGLE_USERNAME }}" "${{ secrets.KAGGLE_KEY }}" > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
 
-      # Paso 5: Instalar dependencias
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-          pip install matplotlib seaborn
 
-      # Paso 6: Configurar Git
-      - name: Configurar Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config pull.rebase false
-
-      # Paso 7: Sincronizar con el repositorio remoto
       - name: Sincronizar con el repositorio remoto
         run: |
           git fetch origin main
-          git checkout main
-          git pull origin main --no-rebase || true
+          git reset --hard origin/main
+          git clean -fdx
 
-      # Paso 8: Limpiar archivos generados anteriormente
-      - name: Limpiar archivos generados
-        run: |
-          rm -f src/static/auditoria/*.txt
-          rm -f src/static/csv/*.csv
-          git status
-
-      # Paso 9: Ejecutar scripts
       - name: Ejecutar scripts de procesamiento
         run: |
           python src/ingestion.py
           python src/cleaning.py
 
-      # Paso 10: Verificar archivos generados
-      - name: Verificar archivos generados
-        run: |
-          ls -la src/static/auditoria/
-          ls -la src/static/csv/
-          ls -la src/static/db/
-
-      # Paso 11: Subir artefactos
       - name: Subir artefactos
         uses: actions/upload-artifact@v4
         with:
           name: evidencias-procesamiento
           path: |
-            src/static/db/*.db
-            src/static/csv/*.csv
             src/static/auditoria/*.txt
+            src/static/csv/*.csv
+            src/static/db/*.db
 
-      # Paso 12: Commit y Push de los cambios
       - name: Commit y Push de los cambios
         run: |
-          # Verificar estado de Git
-          git status
-          
-          # Agregar archivos nuevos o modificados
-          git add src/static/csv/*.csv || true
           git add src/static/auditoria/*.txt || true
-          
-          # Intentar commit
-          if git status --porcelain | grep .; then
-            git commit -m "Actualización automática de evidencias de ingesta y limpieza"
-            git push origin main
-          else
-            echo "No hay cambios para commitear"
-          fi
+          git add src/static/csv/*.csv || true
+          git commit -m "Actualización automática de evidencias de procesamiento" || echo "No hay cambios para commitear"
+          git pull origin main --rebase || true
+          git push origin main || echo "No se pudo hacer push debido a conflictos"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
