@@ -52,9 +52,16 @@ jobs:
           git config --global user.email "actions@github.com"
           git config pull.rebase false
 
-      # Paso 7: Sincronizar con el repositorio remoto
-      - name: Sincronizar con el repositorio remoto
+      # Paso 7: Limpiar archivos existentes y sincronizar
+      - name: Limpiar y sincronizar
         run: |
+          # Eliminar archivos generados anteriormente
+          rm -f src/static/auditoria/cleaning_report.txt
+          rm -f src/static/csv/cleaned_data.csv
+          rm -f src/static/auditoria/ingestion.txt
+          rm -f src/static/csv/ingestion.csv
+          
+          # Sincronizar con el repositorio remoto
           git fetch origin main
           git reset --hard origin/main
 
@@ -81,13 +88,19 @@ jobs:
             src/static/csv/*.csv
             src/static/auditoria/*.txt
 
-      # Paso 11: Commit y Push de los cambios (excluyendo bases de datos)
+      # Paso 11: Commit y Push de los cambios
       - name: Commit y Push de los cambios
         run: |
-          # Agregar solo los archivos generados que no sean bases de datos
-          git add src/static/csv/*.csv
-          git add src/static/auditoria/*.txt
+          # Asegurarse de que los archivos existan antes de agregarlos
+          for file in src/static/csv/*.csv src/static/auditoria/*.txt; do
+            if [ -f "$file" ]; then
+              git add "$file"
+              echo "Agregado: $file"
+            fi
+          done
 
-          # Intentar commit y push
+          # Intentar commit y push con token de autenticación
           git commit -m "Actualización automática de evidencias de ingesta y limpieza" || echo "No hay cambios para commitear"
           git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
