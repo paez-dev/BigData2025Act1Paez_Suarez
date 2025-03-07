@@ -48,7 +48,7 @@ jobs:
         run: |
           rm -f src/static/auditoria/*.txt
           rm -f src/static/csv/*.csv
-          rm -f src/static/db/cleaned_data.db
+          rm -f src/static/db/*.db
           git status
 
       # Paso 7: Ejecutar script de ingesta
@@ -82,7 +82,6 @@ jobs:
           # Verificar si hay archivos para commitear
           git add src/static/auditoria/*.txt || true
           git add src/static/csv/*.csv || true
-          git add src/static/db/cleaned_data.db || true
           git commit -m "Actualización automática de evidencias de procesamiento" || echo "No hay cambios para commitear"
           git push origin main || echo "No se pudo hacer push debido a conflictos"
         env:

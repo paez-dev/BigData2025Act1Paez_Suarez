@@ -27,7 +27,7 @@ Este proyecto implementa las etapas de **ingesta de datos** y **preprocesamiento
 La estructura del proyecto es la siguiente:
 
 ```
-Infra_Arqui_BigData2025Paez_Suarez/
+BigData2025Act1Paez_Suarez/
 ├── setup.py                     # Configuración del proyecto y dependencias
 ├── README.md                    # Documentación del proyecto
 ├── .gitignore                   # Archivos y carpetas ignorados por Git
@@ -40,9 +40,12 @@ Infra_Arqui_BigData2025Paez_Suarez/
 │   ├── static/
 │       ├── auditoria/
 │       │   ├── ingestion.txt    # Archivo de auditoría de ingesta
-│       │   └── cleaning_report.txt # Archivo de auditoría de limpieza│       
+│       │   └── cleaning_report.txt # Archivo de auditoría de limpieza
+│       ├── db/
+│       │  ├── ingestion.db      # Base de datos SQLite generada (inlcuida en gitignore)
+│       │  └── cleaned_data.db  # Base de datos SQLite generada (inlcuida en gitignore)        
 │       └── csv/
-│           ├── ingestion.csv   # Archivo csv de muestra de ingesta
+│           ├── ingestion.csv    # Archivo csv de muestra de ingesta
 │           └── cleaned_data.csv # Archivo csv de muestra de limpieza
 └── .venv/                       # Entorno virtual (ignorado por Git)
 ```
@@ -50,7 +53,7 @@ Infra_Arqui_BigData2025Paez_Suarez/
 ## **Base de Datos SQLite**
 
 ### **Ubicación**
-La base de datos SQLite generada se encuentra en la siguiente ruta dentro del proyecto:
+La base de datos SQLite generada se encuentra en la siguiente ruta dentro del proyecto, pero no está en el repo, porque se incluyó en el gitignore:
 ```
 src/static/db/ingestion.db
 ```
