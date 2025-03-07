@@ -52,33 +52,26 @@ jobs:
           git config --global user.email "actions@github.com"
           git config pull.rebase false
 
-      # Paso 7: Limpiar archivos existentes
-      - name: Limpiar archivos existentes
-        run: |
-          rm -f src/static/csv/cleaned_data.csv
-          rm -f src/static/auditoria/cleaning_report.txt
-          rm -f src/static/auditoria/ingestion.txt
-          rm -f src/static/csv/ingestion.csv
-
-      # Paso 8: Sincronizar con el repositorio remoto
+      # Paso 7: Sincronizar con el repositorio remoto
       - name: Sincronizar con el repositorio remoto
         run: |
-          git pull origin main --no-rebase || echo "Pull completado con posibles conflictos"
+          git fetch origin main
+          git reset --hard origin/main
 
-      # Paso 9: Ejecutar scripts
+      # Paso 8: Ejecutar scripts
       - name: Ejecutar scripts de procesamiento
         run: |
           python src/ingestion.py
           python src/cleaning.py
 
-      # Paso 10: Verificar archivos generados
+      # Paso 9: Verificar archivos generados
       - name: Verificar archivos generados
         run: |
           ls -la src/static/auditoria/
           ls -la src/static/csv/
           ls -la src/static/db/
 
-      # Paso 11: Subir artefactos
+      # Paso 10: Subir artefactos
       - name: Subir artefactos
         uses: actions/upload-artifact@v4
         with:
@@ -88,23 +81,13 @@ jobs:
             src/static/csv/*.csv
             src/static/auditoria/*.txt
 
-      # Paso 12: Commit y Push de los cambios
+      # Paso 11: Commit y Push de los cambios (excluyendo bases de datos)
       - name: Commit y Push de los cambios
         run: |
-          # Verificar y agregar archivos si existen
-          for file in \
-            "src/static/csv/ingestion.csv" \
-            "src/static/auditoria/ingestion.txt" \
-            "src/static/csv/cleaned_data.csv" \
-            "src/static/auditoria/cleaning_report.txt"
-          do
-            if [ -f "$file" ]; then
-              git add "$file"
-              echo "Agregado: $file"
-            else
-              echo "No encontrado: $file"
-            fi
-          done
+          # Agregar solo los archivos generados que no sean bases de datos
+          git add src/static/csv/*.csv
+          git add src/static/auditoria/*.txt
 
-          git commit -m "Actualización automática de evidencias" || echo "No hay cambios para commitear"
-          git push origin main --force
+          # Intentar commit y push
+          git commit -m "Actualización automática de evidencias de ingesta y limpieza" || echo "No hay cambios para commitear"
+          git push origin main
