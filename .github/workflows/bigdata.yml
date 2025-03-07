@@ -17,6 +17,7 @@ jobs:
         with:
           lfs: true
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Paso 2: Configurar Python 3.9
       - name: Configurar Python 3.9
@@ -48,37 +49,38 @@ jobs:
       # Paso 6: Configurar Git
       - name: Configurar Git
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config pull.rebase false
 
-      # Paso 7: Limpiar archivos existentes y sincronizar
-      - name: Limpiar y sincronizar
+      # Paso 7: Sincronizar con el repositorio remoto
+      - name: Sincronizar con el repositorio remoto
         run: |
-          # Eliminar archivos generados anteriormente
-          rm -f src/static/auditoria/cleaning_report.txt
-          rm -f src/static/csv/cleaned_data.csv
-          rm -f src/static/auditoria/ingestion.txt
-          rm -f src/static/csv/ingestion.csv
-          
-          # Sincronizar con el repositorio remoto
           git fetch origin main
-          git reset --hard origin/main
+          git checkout main
+          git pull origin main --no-rebase || true
 
-      # Paso 8: Ejecutar scripts
+      # Paso 8: Limpiar archivos generados anteriormente
+      - name: Limpiar archivos generados
+        run: |
+          rm -f src/static/auditoria/*.txt
+          rm -f src/static/csv/*.csv
+          git status
+
+      # Paso 9: Ejecutar scripts
       - name: Ejecutar scripts de procesamiento
         run: |
           python src/ingestion.py
           python src/cleaning.py
 
-      # Paso 9: Verificar archivos generados
+      # Paso 10: Verificar archivos generados
       - name: Verificar archivos generados
         run: |
           ls -la src/static/auditoria/
           ls -la src/static/csv/
           ls -la src/static/db/
 
-      # Paso 10: Subir artefactos
+      # Paso 11: Subir artefactos
       - name: Subir artefactos
         uses: actions/upload-artifact@v4
         with:
@@ -88,19 +90,22 @@ jobs:
             src/static/csv/*.csv
             src/static/auditoria/*.txt
 
-      # Paso 11: Commit y Push de los cambios
+      # Paso 12: Commit y Push de los cambios
       - name: Commit y Push de los cambios
         run: |
-          # Asegurarse de que los archivos existan antes de agregarlos
-          for file in src/static/csv/*.csv src/static/auditoria/*.txt; do
-            if [ -f "$file" ]; then
-              git add "$file"
-              echo "Agregado: $file"
-            fi
-          done
-
-          # Intentar commit y push con token de autenticación
-          git commit -m "Actualización automática de evidencias de ingesta y limpieza" || echo "No hay cambios para commitear"
-          git push origin main
+          # Verificar estado de Git
+          git status
+          
+          # Agregar archivos nuevos o modificados
+          git add src/static/csv/*.csv || true
+          git add src/static/auditoria/*.txt || true
+          
+          # Intentar commit
+          if git status --porcelain | grep .; then
+            git commit -m "Actualización automática de evidencias de ingesta y limpieza"
+            git push origin main
+          else
+            echo "No hay cambios para commitear"
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
