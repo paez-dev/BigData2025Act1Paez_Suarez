@@ -13,7 +13,6 @@ Este proyecto implementa las etapas de **ingesta de datos** y **preprocesamiento
      - Un archivo Excel con una muestra representativa de los datos.
      - Un archivo de auditoría que compare los registros extraídos con los almacenados.
    - Automatizar el proceso mediante GitHub Actions.
-   - Manejar archivos pesados (como la base de datos) utilizando **Git LFS**.
 
 2. **Preprocesamiento y Limpieza de Datos**:
    - Validar, transformar y depurar el conjunto de datos extraído en la etapa de ingesta.
@@ -31,7 +30,6 @@ La estructura del proyecto es la siguiente:
 Infra_Arqui_BigData2025Paez_Suarez/
 ├── setup.py                     # Configuración del proyecto y dependencias
 ├── README.md                    # Documentación del proyecto
-├── .gitattributes               # Configuración de Git LFS para archivos pesados
 ├── .gitignore                   # Archivos y carpetas ignorados por Git
 ├── .github/
 │   └── workflows/
@@ -42,9 +40,7 @@ Infra_Arqui_BigData2025Paez_Suarez/
 │   ├── static/
 │       ├── auditoria/
 │       │   ├── ingestion.txt    # Archivo de auditoría de ingesta
-│       │   └── cleaning_report.txt # Archivo de auditoría de limpieza
-│       ├── db/
-│       │   └── ingestion.db     # Base de datos SQLite generada (manejada con Git LFS)
+│       │   └── cleaning_report.txt # Archivo de auditoría de limpieza│       
 │       └── csv/
 │           ├── ingestion.csv   # Archivo csv de muestra de ingesta
 │           └── cleaned_data.csv # Archivo csv de muestra de limpieza
@@ -119,11 +115,6 @@ La primera actividad consiste en la ingesta de datos desde un API (Kaggle), su a
    - Se configuró un workflow de GitHub Actions (`bigdata.yml`) para ejecutar automáticamente el proceso de ingesta.
 
 ### **Archivos Generados**
-- **Base de Datos SQLite**:
-  - **Ruta:** `src/static/db/ingestion.db`
-  - Contiene las tablas generadas a partir de los archivos CSV descargados.
-  - **Nota:** Este archivo es manejado mediante **Git LFS** debido a su tamaño.
-
 - **Archivo Csv de Muestra**:
   - **Ruta:** `src/static/csv/ingestion.csv`
   - Contiene una muestra representativa (las primeras 10 filas) de cada archivo CSV.
@@ -190,7 +181,6 @@ El workflow de limpieza (`cleaning.yml`) realiza las siguientes tareas:
 Antes de comenzar, asegúrate de tener instalado lo siguiente:
 1. **Python 3.9 o superior**.
 2. **pip** (gestor de paquetes de Python).
-3. **Git** y **Git LFS** para clonar el repositorio y manejar archivos pesados.
 4. **Cuenta en Kaggle** con credenciales configuradas para la API.
 
 ---
@@ -205,18 +195,7 @@ git clone https://github.com/paez-dev/BigData2025Act1Paez_Suarez.git
 cd BigData2025Act1Paez_Suarez
 ```
 
-### **2. Instalar Git LFS**
-Si aún no tienes Git LFS instalado, configúralo en tu máquina local:
-```bash
-git lfs install
-```
-
-Asegúrate de que los archivos pesados se descarguen correctamente:
-```bash
-git lfs pull
-```
-
-### **3. Crear un entorno virtual**
+### **2. Crear un entorno virtual**
 Crea y activa un entorno virtual para instalar las dependencias:
 
 ```bash
@@ -230,7 +209,7 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### **4. Instalar las dependencias**
+### **3. Instalar las dependencias**
 Instala las dependencias del proyecto utilizando el archivo `setup.py`:
 
 ```bash
