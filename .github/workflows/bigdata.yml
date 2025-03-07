@@ -11,38 +11,62 @@ jobs:
   data_processing:
     runs-on: ubuntu-latest
     steps:
+      # Paso 1: Checkout del repositorio
       - name: Checkout del repositorio
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Paso 2: Configurar Python 3.9
       - name: Configurar Python 3.9
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
+      # Paso 3: Configurar credenciales de Kaggle
       - name: Configurar credenciales de Kaggle
         run: |
           mkdir -p ~/.kaggle
           printf '{"username": "%s", "key": "%s"}' "${{ secrets.KAGGLE_USERNAME }}" "${{ secrets.KAGGLE_KEY }}" > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
 
+      # Paso 4: Instalar dependencias
       - name: Instalar dependencias
         run: |
           python -m pip install --upgrade pip
           pip install -e .
 
+      # Paso 5: Sincronizar con el repositorio remoto
       - name: Sincronizar con el repositorio remoto
         run: |
           git fetch origin main
           git reset --hard origin/main
           git clean -fdx
 
-      - name: Ejecutar scripts de procesamiento
+      # Paso 6: Limpiar archivos generados anteriormente
+      - name: Limpiar archivos generados
         run: |
-          python src/ingestion.py
-          python src/cleaning.py
+          rm -f src/static/auditoria/*.txt
+          rm -f src/static/csv/*.csv
+          rm -f src/static/db/cleaned_data.db
+          git status
 
+      # Paso 7: Ejecutar script de ingesta
+      - name: Ejecutar script de ingesta
+        run: python src/ingestion.py
+
+      # Paso 8: Ejecutar script de limpieza
+      - name: Ejecutar script de limpieza
+        run: python src/cleaning.py
+
+      # Paso 9: Verificar archivos generados
+      - name: Verificar archivos generados
+        run: |
+          ls -la src/static/auditoria/
+          ls -la src/static/csv/
+          ls -la src/static/db/
+
+      # Paso 10: Subir artefactos generados
       - name: Subir artefactos
         uses: actions/upload-artifact@v4
         with:
@@ -52,12 +76,14 @@ jobs:
             src/static/csv/*.csv
             src/static/db/*.db
 
+      # Paso 11: Commit y Push de los cambios
       - name: Commit y Push de los cambios
         run: |
+          # Verificar si hay archivos para commitear
           git add src/static/auditoria/*.txt || true
           git add src/static/csv/*.csv || true
+          git add src/static/db/cleaned_data.db || true
           git commit -m "Actualización automática de evidencias de procesamiento" || echo "No hay cambios para commitear"
-          git pull origin main --rebase || true
           git push origin main || echo "No se pudo hacer push debido a conflictos"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
