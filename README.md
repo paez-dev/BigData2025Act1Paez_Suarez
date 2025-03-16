@@ -33,7 +33,7 @@ BigData2025Act1Paez_Suarez/
 ├── .gitignore                   # Archivos y carpetas ignorados por Git
 ├── .github/
 │   └── workflows/
-│       ├── bigdata.yml          # Workflow de ingesta de datos
+│       ├── bigdata.yml          # Workflow de ingesta de datos y preprocesamiento y limpieza de datos
 ├── src/
 │   ├── ingestion.py             # Script principal de ingesta de datos
 │   ├── cleaning.py              # Script principal de limpieza de datos
@@ -169,6 +169,64 @@ La segunda actividad consiste en la limpieza y transformación de los datos extr
 - **Archivo de Auditoría**:
   - **Ruta:** `src/static/auditoria/cleaning_report.txt`
   - Documenta las operaciones realizadas durante la limpieza.
+
+
+## **Resumen de los Datos Después de la Limpieza**
+
+### **Resumen General**
+- **Registros antes de la limpieza:** 1,550,922  
+- **Registros después de la limpieza:** 1,289,091  
+- **Valores nulos antes de la limpieza:** 153,259  
+- **Valores nulos después de la limpieza:** 4,748  
+- **Registros eliminados:** 261,831  
+- **Valores nulos tratados:** 148,511  
+
+### **Cambios Principales por Tabla**
+
+#### **`olist_geolocation_dataset`**
+- **Registros antes:** 1,000,163  
+- **Registros después:** 738,332  
+- **Operaciones realizadas:**  
+  - Eliminación de 261,831 filas duplicadas
+
+#### **`olist_order_reviews_dataset`**
+- **Registros antes:** 99,224  
+- **Registros después:** 99,224  
+- **Operaciones realizadas:**  
+  - Imputación de valores nulos en `review_comment_title` y `review_comment_message` con "DESCONOCIDO"  
+  - Conversión de columnas de fecha a tipo `datetime`  
+  - Categorización de puntuaciones de reseñas en sentimientos
+
+#### **`olist_orders_dataset`**
+- **Registros antes:** 99,441  
+- **Registros después:** 99,441  
+- **Operaciones realizadas:**  
+  - Imputación de valores nulos en columnas como `order_approved_at`, `order_delivered_carrier_date` y `order_delivered_customer_date` con "DESCONOCIDO"  
+  - Conversión de columnas de fecha a tipo `datetime`
+
+#### **`olist_products_dataset`**
+- **Registros antes:** 32,951  
+- **Registros después:** 32,951  
+- **Operaciones realizadas:**  
+  - Imputación de valores nulos en columnas como `product_category_name`, `product_name_lenght`, `product_description_lenght`, y otras, utilizando valores como "DESCONOCIDO" o la mediana  
+  - Estandarización de nombres de categorías de productos
+
+### **Datos Limpios Guardados**
+- **Base de datos SQLite:** `src/static/db/cleaned_data.db`  
+- **Tablas generadas:**  
+  - `clean_olist_order_payments_dataset`  
+  - `clean_olist_sellers_dataset`  
+  - `clean_olist_geolocation_dataset`  
+  - `clean_olist_order_reviews_dataset`  
+  - `clean_olist_order_items_dataset`  
+  - `clean_olist_customers_dataset`  
+  - `clean_product_category_name_translation`  
+  - `clean_olist_orders_dataset`  
+  - `clean_olist_products_dataset`
+
+Este resumen refleja cómo los datos fueron depurados y transformados para garantizar su calidad, eliminando duplicados, imputando valores nulos y corrigiendo inconsistencias. Esto asegura que los datos estén listos para análisis posteriores y generación de insights.
+
+---
 
 ### **Workflow de GitHub Actions**
 El workflow de limpieza (`cleaning.yml`) realiza las siguientes tareas:
