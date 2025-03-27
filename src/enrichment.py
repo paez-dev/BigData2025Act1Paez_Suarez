@@ -218,6 +218,32 @@ def save_results(enriched_data):
     with open('src/static/auditoria/enriched_report.txt', 'w') as f:
         f.write(audit_content)
 
+def save_enriched_data_to_db(enriched_data):
+    """
+    Guarda los datos enriquecidos en una nueva base de datos SQLite.
+    """
+    print("Guardando datos enriquecidos en base de datos SQLite...")
+    os.makedirs('src/static/db', exist_ok=True)
+    db_path = 'src/static/db/enriched_data.db'
+
+    # Eliminar la base de datos si ya existe
+    if os.path.exists(db_path):
+        print(f"Eliminando base de datos existente en {db_path}...")
+        os.remove(db_path)
+
+    # Crear la conexión a la base de datos
+    conn = sqlite3.connect(db_path)
+
+    # Guardar cada DataFrame enriquecido como una tabla en la base de datos
+    for table_name, df in enriched_data.items():
+        enriched_table_name = f"enriched_{table_name}"
+        print(f"Guardando tabla: {enriched_table_name} con {len(df)} registros")
+        df.to_sql(enriched_table_name, conn, if_exists="replace", index=False)
+
+    conn.close()
+    print(f"Base de datos de datos enriquecidos generada en: {db_path}")
+    return db_path
+
 def main():
     """
     Función principal que ejecuta el proceso de enriquecimiento.
@@ -237,6 +263,9 @@ def main():
 
         # 5. Guardar resultados
         save_results(enriched_data)
+
+        # 6. Guardar la base de datos con los datos enriquecidos
+        save_enriched_data_to_db(enriched_data)
 
         print("Proceso de enriquecimiento completado exitosamente.")
 
