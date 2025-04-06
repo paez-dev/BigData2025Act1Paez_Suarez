@@ -48,6 +48,12 @@ BigData2025Act1Paez_Suarez/
 ├── .github/
 │   └── workflows/
 │       ├── bigdata.yml          # Workflow de ingesta, limpieza y enriquecimiento de datos
+├── docs/                        # Documentación y diagramas del proyecto
+│   ├── Arquitectura del proyecto.drawio.drawio  # Diagrama de arquitectura en formato Draw.io
+│   ├── Arquitectura del proyecto.png           # Diagrama de arquitectura en formato PNG
+│   ├── Diagrama Final ER del proyecto.png      # Diagrama ER final en formato PNG
+│   ├── Diagrama Final ER del proyecto.sql      # Script SQL del diagrama ER final
+│   └── Documentación de la Arquitectura y Modelo de Datos.pdf # Documento PDF con la descripción detallada
 ├── src/
 │   ├── ingestion.py             # Script principal de ingesta de datos
 │   ├── cleaning.py              # Script principal de limpieza de datos
@@ -77,6 +83,7 @@ BigData2025Act1Paez_Suarez/
 │           └── additional_data.txt  # Archivo TXT de datos adicionales
 └── .venv/                       # Entorno virtual (ignorado por Git)
 ```
+
 ---
 
 ## **Base de Datos SQLite**
